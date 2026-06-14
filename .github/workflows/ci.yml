@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint (ruff check)
+        run: ruff check .
+
+      - name: Format check (ruff format)
+        run: ruff format --check .
+
+      - name: Type check (pyright)
+        run: pyright tokenlens/
+
+      - name: Tests (pytest)
+        run: pytest tests/ -v --tb=short --cov=tokenlens --cov-report=term-missing
+
+      - name: Smoke-test CLI
+        run: |
+          tokenlens vocab-diff cl100k_base o200k_base
+          tokenlens diff cl100k_base o200k_base --text "biostatistical significance" --no-vocab
+          tokenlens diff cl100k_base o200k_base --corpus tests/fixtures/corpus.jsonl --no-vocab --boundaries
+          tokenlens cost cl100k_base o200k_base --corpus tests/fixtures/corpus.jsonl --price-a 0.03 --price-b 0.01

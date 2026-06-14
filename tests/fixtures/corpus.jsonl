@@ -1,0 +1,10 @@
+{"id": "p001", "text": "What is the capital of France?"}
+{"id": "p002", "text": "ChatGPT rewrites biostatistical significance tests automatically."}
+{"id": "p003", "text": "Summarize the following JSON payload and extract all hyperparameters."}
+{"id": "p004", "text": "The cryptocurrency market exhibited unprecedented volatility."}
+{"id": "p005", "text": "Translate this Python function into idiomatic Rust with proper error handling."}
+{"id": "p006", "text": "def fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)"}
+{"id": "p007", "text": "GPT-4o achieves state-of-the-art performance on multimodal benchmarks."}
+{"id": "p008", "text": "Explain backpropagation through time (BPTT) in recurrent neural networks."}
+{"id": "p009", "text": "The tokenizer encodes subword units using byte-pair encoding (BPE)."}
+{"id": "p010", "text": "List all EU member states alphabetically with their ISO 3166-1 codes."}
