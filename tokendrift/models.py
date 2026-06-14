@@ -1,5 +1,5 @@
 """
-tokenlens.models
+tokendrift.models
 ~~~~~~~~~~~~~~~~
 All shared data classes. Kept in one file so every module imports from here
 and there are no circular dependencies.
@@ -16,7 +16,7 @@ class ViolationType(str, Enum):
     Structural classification of how a word's token boundaries changed.
 
     These describe *what* changed structurally. They are NOT a judgement
-    about whether the change affects model behaviour: TokenLens does not
+    about whether the change affects model behaviour: TokenDrift does not
     measure behavioural impact, and a word being segmented differently is
     a normal, usually-harmless consequence of a tokenizer change.
     """

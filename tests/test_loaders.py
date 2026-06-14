@@ -1,10 +1,10 @@
-"""Tests for tokenlens.corpus.loaders."""
+"""Tests for tokendrift.corpus.loaders."""
 
 from __future__ import annotations
 
 import pytest
 
-from tokenlens.corpus.loaders import load_corpus
+from tokendrift.corpus.loaders import load_corpus
 
 
 def _write(tmp_path, name: str, content: str):

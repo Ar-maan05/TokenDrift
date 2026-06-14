@@ -1,5 +1,5 @@
 """
-tokenlens.core.vocab
+tokendrift.core.vocab
 ~~~~~~~~~~~~~~~~~~~~
 Vocabulary-level diff between two tokenizers.
 
@@ -10,8 +10,8 @@ remapping happens, with no error at runtime.
 
 Usage
 -----
->>> from tokenlens.core.loader import TokenizerLoader
->>> from tokenlens.core.vocab import VocabDiffer
+>>> from tokendrift.core.loader import TokenizerLoader
+>>> from tokendrift.core.vocab import VocabDiffer
 >>> tok_a = TokenizerLoader.load("cl100k_base")
 >>> tok_b = TokenizerLoader.load("o200k_base")
 >>> diff = VocabDiffer().diff(tok_a, tok_b)
@@ -20,8 +20,8 @@ Usage
 
 from __future__ import annotations
 
-from tokenlens.core.loader import UnifiedTokenizer
-from tokenlens.models import RemappedEntry, VocabDiff, VocabEntry
+from tokendrift.core.loader import UnifiedTokenizer
+from tokendrift.models import RemappedEntry, VocabDiff, VocabEntry
 
 
 class VocabDiffer:

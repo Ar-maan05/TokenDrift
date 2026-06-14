@@ -1,10 +1,10 @@
-"""Tests for tokenlens.core.loader."""
+"""Tests for tokendrift.core.loader."""
 
 from __future__ import annotations
 
 import pytest
 
-from tokenlens.core.loader import (
+from tokendrift.core.loader import (
     TIKTOKEN_ENCODINGS,
     TiktokenTokenizer,
     TokenizerLoader,

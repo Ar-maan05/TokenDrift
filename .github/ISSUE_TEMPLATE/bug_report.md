@@ -9,12 +9,12 @@ labels: bug
 - Tokenizer B (after):
 
 **Versions:**
-- tokenlens:
+- tokendrift:
 - Python:
 - tiktoken / tokenizers (if relevant):
 
 **Command or code**
-<!-- The exact `tokenlens ...` command or Python snippet you ran. -->
+<!-- The exact `tokendrift ...` command or Python snippet you ran. -->
 
 **What happened**
 <!-- The behavior you observed, including any traceback. -->

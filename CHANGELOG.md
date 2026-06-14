@@ -32,9 +32,9 @@ Initial release.
   `CorpusEntry` objects, with auto-assigned IDs when absent.
 - **Rich terminal renderers** for vocab diff, encoding diff (with a top-N
   most-affected table), cost report, and a single-entry detail view.
-- **CLI** (`tokenlens`): `diff`, `vocab-diff`, `cost`, and `entry` commands.
+- **CLI** (`tokendrift`): `diff`, `vocab-diff`, `cost`, and `entry` commands.
   Boundary detection is opt-in via `--boundaries` on `diff`.
 - Ships type information (`py.typed`); tested on Python 3.10 through 3.13.
 
-[Unreleased]: https://github.com/Ar-maan05/tokenlens/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/Ar-maan05/tokenlens/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Ar-maan05/tokendrift/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Ar-maan05/tokendrift/releases/tag/v0.1.0

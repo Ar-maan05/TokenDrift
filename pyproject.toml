@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tokenlens"
+name = "tokendrift"
 version = "0.1.0"
 description = "Token-count, cost, and vocabulary diffing for LLM tokenizer changes"
 readme = "README.md"
@@ -43,27 +43,27 @@ nltk = ["nltk>=3.8"]
 sentencepiece = ["sentencepiece>=0.2.0"]
 
 [project.scripts]
-tokenlens = "tokenlens.cli.main:app"
+tokendrift = "tokendrift.cli.main:app"
 
 [project.urls]
-Homepage = "https://github.com/Ar-maan05/tokenlens"
-Repository = "https://github.com/Ar-maan05/tokenlens"
-Issues = "https://github.com/Ar-maan05/tokenlens/issues"
-Changelog = "https://github.com/Ar-maan05/tokenlens/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/Ar-maan05/tokendrift"
+Repository = "https://github.com/Ar-maan05/tokendrift"
+Issues = "https://github.com/Ar-maan05/tokendrift/issues"
+Changelog = "https://github.com/Ar-maan05/tokendrift/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["tokenlens*"]
+include = ["tokendrift*"]
 
 [tool.setuptools.package-data]
-tokenlens = ["py.typed"]
+tokendrift = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
 
 [tool.coverage.run]
-source = ["tokenlens"]
+source = ["tokendrift"]
 omit = ["tests/*"]
 
 [tool.ruff]
@@ -74,5 +74,5 @@ target-version = "py310"
 select = ["E", "F", "I", "UP"]
 
 [tool.pyright]
-include = ["tokenlens"]
+include = ["tokendrift"]
 pythonVersion = "3.10"

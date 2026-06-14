@@ -1,19 +1,19 @@
 """
-tokenlens.report.cost
+tokendrift.report.cost
 ~~~~~~~~~~~~~~~~~~~~~
 Cost impact calculator: given a list of ``TokenDiff`` objects and per-token
 pricing for two models, produces a ``CostReport``.
 
 Usage
 -----
->>> from tokenlens.report.cost import CostCalculator
+>>> from tokendrift.report.cost import CostCalculator
 >>> report = CostCalculator().compute(diffs, price_a=0.03, price_b=0.01)
 >>> print(f"Delta: ${report.cost_delta_usd:.4f}")
 """
 
 from __future__ import annotations
 
-from tokenlens.models import CostReport, PromptCostDelta, TokenDiff
+from tokendrift.models import CostReport, PromptCostDelta, TokenDiff
 
 
 class CostCalculator:

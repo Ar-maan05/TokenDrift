@@ -1,5 +1,5 @@
 """
-tokenlens.core.differ
+tokendrift.core.differ
 ~~~~~~~~~~~~~~~~~~~~~
 Per-entry encoding diff between two tokenizers.
 
@@ -12,8 +12,8 @@ Per-entry encoding diff between two tokenizers.
 
 Usage
 -----
->>> from tokenlens.core.loader import TokenizerLoader
->>> from tokenlens.core.differ import EncodingDiffer
+>>> from tokendrift.core.loader import TokenizerLoader
+>>> from tokendrift.core.differ import EncodingDiffer
 >>> tok_a = TokenizerLoader.load("cl100k_base")
 >>> tok_b = TokenizerLoader.load("o200k_base")
 >>> diff = EncodingDiffer().diff("Hello world", tok_a, tok_b)
@@ -22,9 +22,9 @@ Usage
 
 from __future__ import annotations
 
-from tokenlens.core.boundary import BoundaryDetector
-from tokenlens.core.loader import UnifiedTokenizer
-from tokenlens.models import TokenDiff
+from tokendrift.core.boundary import BoundaryDetector
+from tokendrift.core.loader import UnifiedTokenizer
+from tokendrift.models import TokenDiff
 
 
 class EncodingDiffer:

@@ -10,7 +10,7 @@ import pytest
 from typer.testing import CliRunner
 
 from tests.conftest import MockTokenizerA, MockTokenizerB
-from tokenlens.cli.main import app
+from tokendrift.cli.main import app
 
 runner = CliRunner()
 
@@ -20,7 +20,7 @@ def patch_loader(monkeypatch):
     def fake_load(identifier: str):
         return MockTokenizerB() if identifier.endswith("B") else MockTokenizerA()
 
-    monkeypatch.setattr("tokenlens.cli.main.TokenizerLoader.load", staticmethod(fake_load))
+    monkeypatch.setattr("tokendrift.cli.main.TokenizerLoader.load", staticmethod(fake_load))
 
 
 @pytest.fixture

@@ -1,4 +1,4 @@
-"""Tests for tokenlens.report.terminal.
+"""Tests for tokendrift.report.terminal.
 
 These assert the renderers run without error and emit the key facts. Rich
 output is captured with a recording Console so no real terminal is needed.
@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 from rich.console import Console
 
-from tokenlens.models import (
+from tokendrift.models import (
     BoundaryViolation,
     CostReport,
     PromptCostDelta,
@@ -19,7 +19,7 @@ from tokenlens.models import (
     VocabDiff,
     VocabEntry,
 )
-from tokenlens.report.terminal import (
+from tokendrift.report.terminal import (
     render_cost_report,
     render_encoding_diff,
     render_entry_detail,

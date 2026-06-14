@@ -1,11 +1,11 @@
-"""Tests for tokenlens.core.boundary."""
+"""Tests for tokendrift.core.boundary."""
 
 from __future__ import annotations
 
 import pytest
 
-from tokenlens.core.boundary import BoundaryDetector, _whitespace_word_spans
-from tokenlens.models import BoundaryViolation, ViolationType
+from tokendrift.core.boundary import BoundaryDetector, _whitespace_word_spans
+from tokendrift.models import BoundaryViolation, ViolationType
 
 
 @pytest.fixture
@@ -170,7 +170,7 @@ def test_code_text(detector, tok_a, tok_b):
 
 @pytest.mark.network
 def test_real_split_detection():
-    from tokenlens.core.loader import TokenizerLoader
+    from tokendrift.core.loader import TokenizerLoader
 
     ta = TokenizerLoader.load("cl100k_base")
     tb = TokenizerLoader.load("o200k_base")

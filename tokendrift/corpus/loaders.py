@@ -1,5 +1,5 @@
 """
-tokenlens.corpus.loaders
+tokendrift.corpus.loaders
 ~~~~~~~~~~~~~~~~~~~~~~~~
 Load a prompt corpus from disk into a list of ``CorpusEntry`` objects.
 
@@ -13,7 +13,7 @@ Supported formats
 
 Usage
 -----
->>> from tokenlens.corpus.loaders import load_corpus
+>>> from tokendrift.corpus.loaders import load_corpus
 >>> entries = load_corpus("prompts.jsonl")
 >>> entries[0].id, entries[0].text
 ('p001', 'What is the capital of France?')
@@ -25,7 +25,7 @@ import csv
 import json
 from pathlib import Path
 
-from tokenlens.models import CorpusEntry
+from tokendrift.models import CorpusEntry
 
 
 def load_corpus(path: str | Path) -> list[CorpusEntry]:

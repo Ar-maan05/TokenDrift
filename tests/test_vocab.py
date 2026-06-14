@@ -1,11 +1,11 @@
-"""Tests for tokenlens.core.vocab."""
+"""Tests for tokendrift.core.vocab."""
 
 from __future__ import annotations
 
 import pytest
 
-from tokenlens.core.vocab import VocabDiffer
-from tokenlens.models import VocabDiff
+from tokendrift.core.vocab import VocabDiffer
+from tokendrift.models import VocabDiff
 
 
 @pytest.fixture(scope="module")
@@ -62,7 +62,7 @@ def test_has_remappings_false_on_self_diff(tok_a):
 
 @pytest.mark.network
 def test_cl100k_to_o200k_has_additions():
-    from tokenlens.core.loader import TokenizerLoader
+    from tokendrift.core.loader import TokenizerLoader
 
     ta = TokenizerLoader.load("cl100k_base")
     tb = TokenizerLoader.load("o200k_base")

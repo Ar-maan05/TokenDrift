@@ -42,14 +42,14 @@ jobs:
         run: ruff format --check .
 
       - name: Type check (pyright)
-        run: pyright tokenlens/
+        run: pyright tokendrift/
 
       - name: Tests (pytest)
-        run: pytest tests/ -v --tb=short --cov=tokenlens --cov-report=term-missing
+        run: pytest tests/ -v --tb=short --cov=tokendrift --cov-report=term-missing
 
       - name: Smoke-test CLI
         run: |
-          tokenlens vocab-diff cl100k_base o200k_base
-          tokenlens diff cl100k_base o200k_base --text "biostatistical significance" --no-vocab
-          tokenlens diff cl100k_base o200k_base --corpus tests/fixtures/corpus.jsonl --no-vocab --boundaries
-          tokenlens cost cl100k_base o200k_base --corpus tests/fixtures/corpus.jsonl --price-a 0.03 --price-b 0.01
+          tokendrift vocab-diff cl100k_base o200k_base
+          tokendrift diff cl100k_base o200k_base --text "biostatistical significance" --no-vocab
+          tokendrift diff cl100k_base o200k_base --corpus tests/fixtures/corpus.jsonl --no-vocab --boundaries
+          tokendrift cost cl100k_base o200k_base --corpus tests/fixtures/corpus.jsonl --price-a 0.03 --price-b 0.01

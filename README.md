@@ -1,18 +1,18 @@
-# TokenLens
+# TokenDrift
 
-[![CI](https://github.com/Ar-maan05/tokenlens/actions/workflows/ci.yml/badge.svg)](https://github.com/Ar-maan05/tokenlens/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/tokenlens.svg)](https://pypi.org/project/tokenlens/)
-[![Python versions](https://img.shields.io/pypi/pyversions/tokenlens.svg)](https://pypi.org/project/tokenlens/)
+[![CI](https://github.com/Ar-maan05/tokendrift/actions/workflows/ci.yml/badge.svg)](https://github.com/Ar-maan05/tokendrift/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/tokendrift.svg)](https://pypi.org/project/tokendrift/)
+[![Python versions](https://img.shields.io/pypi/pyversions/tokendrift.svg)](https://pypi.org/project/tokendrift/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Token-count, cost, and vocabulary diffing for LLM tokenizer changes.
 
 When you upgrade a model, switch providers, or move to a self-hosted checkpoint, the tokenizer changes silently. Token counts shift, moving your API cost and context-window pressure. Token IDs are renumbered, breaking any system that stored raw integer IDs (cache keys, classifier heads, adapter embedding rows). None of this produces an error.
 
-TokenLens measures these changes against your own prompt corpus before they hit production.
+TokenDrift measures these changes against your own prompt corpus before they hit production.
 
 ```
-tokenlens diff cl100k_base o200k_base --corpus prompts.jsonl --price-a 0.03 --price-b 0.01
+tokendrift diff cl100k_base o200k_base --corpus prompts.jsonl --price-a 0.03 --price-b 0.01
 ```
 
 ```
@@ -46,14 +46,14 @@ tokenlens diff cl100k_base o200k_base --corpus prompts.jsonl --price-a 0.03 --pr
 ## Installation
 
 ```bash
-pip install tokenlens
+pip install tokendrift
 ```
 
 For development:
 
 ```bash
-git clone https://github.com/Ar-maan05/tokenlens
-cd tokenlens
+git clone https://github.com/Ar-maan05/tokendrift
+cd tokendrift
 pip install -e ".[dev]"
 ```
 
@@ -61,23 +61,23 @@ pip install -e ".[dev]"
 
 **Single text diff:**
 ```bash
-tokenlens diff cl100k_base o200k_base \
+tokendrift diff cl100k_base o200k_base \
   --text "ChatGPT rewrites biostatistical significance tests"
 ```
 
 **Corpus diff:**
 ```bash
-tokenlens diff cl100k_base o200k_base --corpus prompts.jsonl
+tokendrift diff cl100k_base o200k_base --corpus prompts.jsonl
 ```
 
 **Vocabulary diff only (no corpus needed):**
 ```bash
-tokenlens vocab-diff cl100k_base o200k_base --show remapped
+tokendrift vocab-diff cl100k_base o200k_base --show remapped
 ```
 
 **Cost impact:**
 ```bash
-tokenlens cost cl100k_base o200k_base \
+tokendrift cost cl100k_base o200k_base \
   --corpus prompts.jsonl \
   --price-a 0.03 \
   --price-b 0.01
@@ -85,13 +85,13 @@ tokenlens cost cl100k_base o200k_base \
 
 **Inspect how a single text re-segments** (experimental boundary detection):
 ```bash
-tokenlens entry cl100k_base o200k_base \
+tokendrift entry cl100k_base o200k_base \
   --text "ChatGPT rewrites biostatistical significance tests"
 ```
 
 ## Corpus format
 
-TokenLens accepts JSONL (recommended), CSV, or plain text.
+TokenDrift accepts JSONL (recommended), CSV, or plain text.
 
 **JSONL**: one object per line, must have a `text` key:
 ```jsonl
@@ -101,7 +101,7 @@ TokenLens accepts JSONL (recommended), CSV, or plain text.
 
 `id` and `metadata` are optional. Everything else in the object is stored as metadata.
 
-## What TokenLens detects
+## What TokenDrift detects
 
 ### Vocabulary changes
 
@@ -115,7 +115,7 @@ TokenLens accepts JSONL (recommended), CSV, or plain text.
 - **Cost delta**: the count delta priced out, per prompt and corpus-wide.
 - **First divergence position**: the character offset where the two encodings first differ.
 
-These are exact, fully-supported, and the reason to use TokenLens.
+These are exact, fully-supported, and the reason to use TokenDrift.
 
 ### Boundary changes (experimental)
 
@@ -127,15 +127,15 @@ Enabled with `--boundaries` on `diff`, or shown by the `entry` command. This is 
 | MERGE | a word loses tokens (2+ → 1) |
 | RESEGMENT | same token count, but the segmentation boundaries moved |
 
-**This is not a quality judgement.** TokenLens does not claim a boundary change degrades model behaviour: re-segmentation is a normal consequence of a tokenizer change, and any behavioural effect is task-specific and not measured here. The feature is off by default and reports structure only, without severity ranking. (Pure ID renumbering, a word that encodes to the same strings in both tokenizers but with different IDs, is reported at the vocabulary level, not here, where it would flag almost every word.)
+**This is not a quality judgement.** TokenDrift does not claim a boundary change degrades model behaviour: re-segmentation is a normal consequence of a tokenizer change, and any behavioural effect is task-specific and not measured here. The feature is off by default and reports structure only, without severity ranking. (Pure ID renumbering, a word that encodes to the same strings in both tokenizers but with different IDs, is reported at the vocabulary level, not here, where it would flag almost every word.)
 
 ## Python API
 
 ```python
-from tokenlens.core.loader import TokenizerLoader
-from tokenlens.core.differ import EncodingDiffer
-from tokenlens.core.vocab import VocabDiffer
-from tokenlens.corpus.loaders import load_corpus
+from tokendrift.core.loader import TokenizerLoader
+from tokendrift.core.differ import EncodingDiffer
+from tokendrift.core.vocab import VocabDiffer
+from tokendrift.corpus.loaders import load_corpus
 
 # Load tokenizers
 tok_a = TokenizerLoader.load("cl100k_base")    # tiktoken
@@ -143,7 +143,7 @@ tok_b = TokenizerLoader.load("o200k_base")     # tiktoken
 # tok_b = TokenizerLoader.load("Qwen/Qwen3-4B")  # HuggingFace Hub
 
 # Vocab diff
-from tokenlens.core.vocab import VocabDiffer
+from tokendrift.core.vocab import VocabDiffer
 v_diff = VocabDiffer().diff(tok_a, tok_b)
 print(f"Added: {len(v_diff.added)}, Remapped: {len(v_diff.remapped)}")
 
@@ -164,7 +164,7 @@ pairs = [(e.id, e.text) for e in entries]
 diffs = differ.diff_many(pairs, tok_a, tok_b)
 
 # Cost report
-from tokenlens.report.cost import CostCalculator
+from tokendrift.report.cost import CostCalculator
 report = CostCalculator().compute(diffs, price_a=0.03, price_b=0.01)
 print(f"Cost delta: ${report.cost_delta_usd:.4f}")
 ```
@@ -191,7 +191,7 @@ TOKENLENS_NETWORK_TESTS=1 pytest
 ## Project structure
 
 ```
-tokenlens/
+tokendrift/
 ├── core/
 │   ├── loader.py       # UnifiedTokenizer + backends (tiktoken, HuggingFace)
 │   ├── vocab.py        # VocabDiffer

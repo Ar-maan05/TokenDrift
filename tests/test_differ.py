@@ -1,11 +1,11 @@
-"""Tests for tokenlens.core.differ."""
+"""Tests for tokendrift.core.differ."""
 
 from __future__ import annotations
 
 import pytest
 
-from tokenlens.core.differ import EncodingDiffer
-from tokenlens.models import TokenDiff
+from tokendrift.core.differ import EncodingDiffer
+from tokendrift.models import TokenDiff
 
 
 def test_returns_token_diff(tok_a, tok_b, differ):
@@ -112,7 +112,7 @@ def test_mock_b_bigram_counts(tok_b):
 
 @pytest.mark.network
 def test_real_cl100k_encoding():
-    from tokenlens.core.loader import TokenizerLoader
+    from tokendrift.core.loader import TokenizerLoader
 
     ta = TokenizerLoader.load("cl100k_base")
     tb = TokenizerLoader.load("o200k_base")

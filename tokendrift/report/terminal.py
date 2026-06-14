@@ -1,5 +1,5 @@
 """
-tokenlens.report.terminal
+tokendrift.report.terminal
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 Rich-based terminal renderer for diff results.
 
@@ -19,7 +19,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from tokenlens.models import (
+from tokendrift.models import (
     CostReport,
     TokenDiff,
     ViolationType,

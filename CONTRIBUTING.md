@@ -1,6 +1,6 @@
-# Contributing to TokenLens
+# Contributing to TokenDrift
 
-Thanks for your interest in improving `tokenlens`. This project diffs two
+Thanks for your interest in improving `tokendrift`. This project diffs two
 tokenizers (token counts, cost, vocabulary, and experimental structural
 boundary changes) against a prompt corpus.
 
@@ -9,8 +9,8 @@ boundary changes) against a prompt corpus.
 Python 3.10+ is required. Install the package with the dev tooling:
 
 ```bash
-git clone https://github.com/Ar-maan05/tokenlens
-cd tokenlens
+git clone https://github.com/Ar-maan05/tokendrift
+cd tokendrift
 pip install -e ".[dev]"
 ```
 
@@ -22,7 +22,7 @@ a PR can merge. Run them locally first:
 ```bash
 ruff check .            # lint
 ruff format --check .   # formatting (run `ruff format .` to fix)
-pyright tokenlens/      # static type checking
+pyright tokendrift/      # static type checking
 pytest                  # tests
 ```
 

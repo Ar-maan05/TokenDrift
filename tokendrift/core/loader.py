@@ -1,5 +1,5 @@
 """
-tokenlens.core.loader
+tokendrift.core.loader
 ~~~~~~~~~~~~~~~~~~~~~
 Loads any tokenizer behind a single ``UnifiedTokenizer`` interface,
 regardless of whether it came from tiktoken, HuggingFace, or SentencePiece.
@@ -13,7 +13,7 @@ Detection order
 
 Usage
 -----
->>> from tokenlens.core.loader import TokenizerLoader
+>>> from tokendrift.core.loader import TokenizerLoader
 >>> tok = TokenizerLoader.load("cl100k_base")
 >>> tok.encode("Hello world")
 [9906, 1917]

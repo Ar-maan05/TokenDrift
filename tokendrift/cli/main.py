@@ -1,5 +1,5 @@
 """
-tokenlens.cli.main
+tokendrift.cli.main
 ~~~~~~~~~~~~~~~~~~
 Command-line interface.
 
@@ -19,12 +19,12 @@ import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from tokenlens.core.differ import EncodingDiffer
-from tokenlens.core.loader import TokenizerLoader
-from tokenlens.core.vocab import VocabDiffer
-from tokenlens.corpus.loaders import load_corpus
-from tokenlens.report.cost import CostCalculator
-from tokenlens.report.terminal import (
+from tokendrift.core.differ import EncodingDiffer
+from tokendrift.core.loader import TokenizerLoader
+from tokendrift.core.vocab import VocabDiffer
+from tokendrift.corpus.loaders import load_corpus
+from tokendrift.report.cost import CostCalculator
+from tokendrift.report.terminal import (
     render_cost_report,
     render_encoding_diff,
     render_entry_detail,
@@ -32,13 +32,13 @@ from tokenlens.report.terminal import (
 )
 
 app = typer.Typer(
-    name="tokenlens",
+    name="tokendrift",
     help=(
         "Token-count, cost, and vocabulary diffing for LLM tokenizer changes.\n\n"
         "Examples:\n\n"
-        "  tokenlens diff cl100k_base o200k_base --text 'biostatistical'\n\n"
-        "  tokenlens diff cl100k_base o200k_base --corpus prompts.jsonl\n\n"
-        "  tokenlens vocab-diff cl100k_base o200k_base --show remapped"
+        "  tokendrift diff cl100k_base o200k_base --text 'biostatistical'\n\n"
+        "  tokendrift diff cl100k_base o200k_base --corpus prompts.jsonl\n\n"
+        "  tokendrift vocab-diff cl100k_base o200k_base --show remapped"
     ),
     add_completion=False,
     pretty_exceptions_show_locals=False,
@@ -127,7 +127,7 @@ def diff(
 
     # Build entries list
     if text:
-        from tokenlens.models import CorpusEntry
+        from tokendrift.models import CorpusEntry
 
         entries = [CorpusEntry(id="inline", text=text)]
     else:
@@ -183,7 +183,7 @@ def vocab_diff(
 
     Example:
 
-      tokenlens vocab-diff cl100k_base o200k_base --show remapped
+      tokendrift vocab-diff cl100k_base o200k_base --show remapped
     """
     with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=_console) as p:
         t = p.add_task("Loading tokenizers…", total=None)
@@ -217,7 +217,7 @@ def cost(
 
     Example:
 
-      tokenlens cost cl100k_base o200k_base --corpus prompts.jsonl \\
+      tokendrift cost cl100k_base o200k_base --corpus prompts.jsonl \\
           --price-a 0.03 --price-b 0.01
     """
     with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=_console) as p:
@@ -253,7 +253,7 @@ def entry(
 
     Example:
 
-      tokenlens entry cl100k_base o200k_base \\
+      tokendrift entry cl100k_base o200k_base \\
           --text "ChatGPT rewrites biostatistical significance tests"
     """
     tok_a = TokenizerLoader.load(model_a)

@@ -1,9 +1,9 @@
-"""Tests for tokenlens.report.cost."""
+"""Tests for tokendrift.report.cost."""
 
 from __future__ import annotations
 
-from tokenlens.models import TokenDiff
-from tokenlens.report.cost import CostCalculator
+from tokendrift.models import TokenDiff
+from tokendrift.report.cost import CostCalculator
 
 
 def _diff(eid: str, a: int, b: int) -> TokenDiff:

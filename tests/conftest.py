@@ -25,7 +25,7 @@ import os
 
 import pytest
 
-from tokenlens.core.loader import UnifiedTokenizer
+from tokendrift.core.loader import UnifiedTokenizer
 
 # ---------------------------------------------------------------------------
 # Mock tokenizers
@@ -146,7 +146,7 @@ def tok_b() -> UnifiedTokenizer:
 
 @pytest.fixture(scope="session")
 def differ():
-    from tokenlens.core.differ import EncodingDiffer
+    from tokendrift.core.differ import EncodingDiffer
 
     return EncodingDiffer(detect_boundaries=False)
 

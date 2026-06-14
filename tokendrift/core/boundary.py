@@ -1,5 +1,5 @@
 """
-tokenlens.core.boundary
+tokendrift.core.boundary
 ~~~~~~~~~~~~~~~~~~~~~~~
 Structural boundary-change detection (experimental).
 
@@ -10,7 +10,7 @@ tokenizer B than by tokenizer A:
 - ``MERGE``      several tokens in A become one in B (count shrank)
 - ``RESEGMENT``  same token count, but the segmentation boundaries moved
 
-This is a purely *structural* report. TokenLens does not claim a boundary
+This is a purely *structural* report. TokenDrift does not claim a boundary
 change degrades model behaviour: re-segmentation is normal when tokenizers
 change, and any behavioural effect is task-specific and unmeasured here.
 
@@ -28,8 +28,8 @@ NLTK as a hard dependency.  Pass ``word_tokenizer="nltk"`` to use NLTK's
 
 Usage
 -----
->>> from tokenlens.core.loader import TokenizerLoader
->>> from tokenlens.core.boundary import BoundaryDetector
+>>> from tokendrift.core.loader import TokenizerLoader
+>>> from tokendrift.core.boundary import BoundaryDetector
 >>> tok_a = TokenizerLoader.load("cl100k_base")
 >>> tok_b = TokenizerLoader.load("o200k_base")
 >>> text = "ChatGPT rewrites biostatistical significance tests"
@@ -43,8 +43,8 @@ from __future__ import annotations
 import re
 from typing import Literal
 
-from tokenlens.core.loader import UnifiedTokenizer
-from tokenlens.models import BoundaryViolation, ViolationType
+from tokendrift.core.loader import UnifiedTokenizer
+from tokendrift.models import BoundaryViolation, ViolationType
 
 WordTokenizerChoice = Literal["whitespace", "nltk"]
 
