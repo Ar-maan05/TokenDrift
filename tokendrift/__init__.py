@@ -6,15 +6,77 @@ Token-count, cost, and vocabulary diffing for LLM tokenizer changes.
 Structural boundary-change detection is available as an experimental,
 opt-in extra (``EncodingDiffer(detect_boundaries=True)``).
 
-Quick start
------------
->>> from tokendrift.core.loader import TokenizerLoader
->>> from tokendrift.core.differ import EncodingDiffer
->>> tok_a = TokenizerLoader.load("cl100k_base")
->>> tok_b = TokenizerLoader.load("o200k_base")
->>> diff = EncodingDiffer().diff("biostatistical", tok_a, tok_b)
->>> diff.count_delta, diff.first_divergence_pos
+Public API
+----------
+All stable public names are importable directly from the package root::
+
+    from tokendrift import (
+        TokenizerLoader, UnifiedTokenizer,
+        EncodingDiffer, VocabDiffer, BoundaryDetector,
+        CostCalculator, load_corpus,
+        TokenDiff, VocabDiff, CostReport,
+        BoundaryViolation, ViolationType,
+        CorpusEntry, VocabEntry, RemappedEntry, PromptCostDelta,
+    )
 """
 
-__version__ = "0.1.0"
+from __future__ import annotations
+
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__: str = version("tokendrift")
+except PackageNotFoundError:  # editable install before build, or running from source
+    __version__ = "unknown"
+
 __author__ = "Armaan Sandhu"
+
+# ---------------------------------------------------------------------------
+# Re-export the full stable public API so consumers never need to know the
+# internal submodule layout.  Third-party type checkers follow these imports.
+# ---------------------------------------------------------------------------
+
+from tokendrift.core.boundary import BoundaryDetector
+from tokendrift.core.differ import EncodingDiffer
+from tokendrift.core.loader import TokenizerLoader, UnifiedTokenizer
+from tokendrift.core.vocab import VocabDiffer
+from tokendrift.corpus.loaders import load_corpus
+from tokendrift.models import (
+    BoundaryViolation,
+    CorpusEntry,
+    CostReport,
+    PromptCostDelta,
+    RemappedEntry,
+    TokenDiff,
+    ViolationType,
+    VocabDiff,
+    VocabEntry,
+)
+from tokendrift.report.cost import CostCalculator
+
+__all__ = [
+    # Tokenizer loading
+    "TokenizerLoader",
+    "UnifiedTokenizer",
+    # Core diffing
+    "EncodingDiffer",
+    "VocabDiffer",
+    "BoundaryDetector",
+    # Reports
+    "CostCalculator",
+    # Corpus
+    "load_corpus",
+    # Data models
+    "TokenDiff",
+    "VocabDiff",
+    "CostReport",
+    "BoundaryViolation",
+    "ViolationType",
+    "CorpusEntry",
+    "VocabEntry",
+    "RemappedEntry",
+    "PromptCostDelta",
+    # Package metadata
+    "__version__",
+    "__author__",
+]

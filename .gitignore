@@ -28,6 +28,6 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# TokenLens runtime
-tokenlens.db
+# TokenDrift runtime
+tokendrift.db
 *.db-journal

@@ -44,7 +44,7 @@ are marked `@pytest.mark.network` and skipped by default. Enable them with an
 environment variable; the first run downloads vocab files:
 
 ```bash
-TOKENLENS_NETWORK_TESTS=1 pytest
+TOKENDRIFT_NETWORK_TESTS=1 pytest
 ```
 
 When adding behavior, please cover it with a test. Prefer the mock tokenizers

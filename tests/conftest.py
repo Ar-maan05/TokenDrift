@@ -16,7 +16,7 @@ completely self-contained and require no network calls:
 These are intentionally simple so tests can assert on exact behavior without
 knowing anything about real BPE merges.  Tests that specifically need real
 tiktoken behavior are marked with ``@pytest.mark.network`` and skipped when
-the ``TOKENLENS_NETWORK_TESTS`` environment variable is not set.
+the ``TOKENDRIFT_NETWORK_TESTS`` environment variable is not set.
 """
 
 from __future__ import annotations
@@ -155,7 +155,7 @@ def differ():
 # Network test marker
 # ---------------------------------------------------------------------------
 
-_NETWORK = bool(os.environ.get("TOKENLENS_NETWORK_TESTS"))
+_NETWORK = bool(os.environ.get("TOKENDRIFT_NETWORK_TESTS"))
 
 
 def pytest_configure(config):
@@ -167,7 +167,7 @@ def pytest_configure(config):
 
 def pytest_collection_modifyitems(config, items):
     if not _NETWORK:
-        skip = pytest.mark.skip(reason="Set TOKENLENS_NETWORK_TESTS=1 to run network tests")
+        skip = pytest.mark.skip(reason="Set TOKENDRIFT_NETWORK_TESTS=1 to run network tests")
         for item in items:
             if "network" in item.keywords:
                 item.add_marker(skip)

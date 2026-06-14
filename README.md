@@ -185,7 +185,7 @@ print(f"Cost delta: ${report.cost_delta_usd:.4f}")
 pytest
 
 # Full suite including real tiktoken / HuggingFace tokenizers
-TOKENLENS_NETWORK_TESTS=1 pytest
+TOKENDRIFT_NETWORK_TESTS=1 pytest
 ```
 
 ## Project structure

@@ -47,6 +47,7 @@ tokendrift = "tokendrift.cli.main:app"
 
 [project.urls]
 Homepage = "https://github.com/Ar-maan05/tokendrift"
+Documentation = "https://github.com/Ar-maan05/tokendrift#readme"
 Repository = "https://github.com/Ar-maan05/tokendrift"
 Issues = "https://github.com/Ar-maan05/tokendrift/issues"
 Changelog = "https://github.com/Ar-maan05/tokendrift/blob/main/CHANGELOG.md"
