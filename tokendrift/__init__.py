@@ -76,7 +76,4 @@ __all__ = [
     "VocabEntry",
     "RemappedEntry",
     "PromptCostDelta",
-    # Package metadata
-    "__version__",
-    "__author__",
 ]

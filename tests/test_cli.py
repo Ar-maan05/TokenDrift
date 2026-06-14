@@ -102,3 +102,22 @@ def test_entry():
     result = runner.invoke(app, ["entry", "mockA", "mockB", "--text", "Hello world"])
     assert result.exit_code == 0
     assert "Entry" in result.stdout
+
+
+def test_diff_empty_text():
+    result = runner.invoke(app, ["diff", "mockA", "mockB", "--text", "", "--no-vocab"])
+    assert result.exit_code == 0
+    assert "Entry" in result.stdout
+
+
+def test_diff_nonexistent_corpus():
+    result = runner.invoke(app, ["diff", "mockA", "mockB", "--corpus", "/nonexistent/file.jsonl", "--no-vocab"])
+    assert result.exit_code == 1
+    assert "Error loading corpus:" in result.stdout
+
+
+def test_version_flag():
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert "tokendrift version" in result.stdout
+

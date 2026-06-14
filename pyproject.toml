@@ -7,14 +7,13 @@ name = "tokendrift"
 version = "0.1.0"
 description = "Token-count, cost, and vocabulary diffing for LLM tokenizer changes"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=3.10"
 authors = [{ name = "Armaan Sandhu", email = "asandhu05@wpi.edu" }]
 keywords = ["llm", "tokenizer", "diff", "regression", "nlp"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -46,7 +45,7 @@ sentencepiece = ["sentencepiece>=0.2.0"]
 tokendrift = "tokendrift.cli.main:app"
 
 [project.urls]
-Homepage = "https://github.com/Ar-maan05/tokendrift"
+Homepage = "https://github.com/Ar-maan05/tokendrift#readme"
 Documentation = "https://github.com/Ar-maan05/tokendrift#readme"
 Repository = "https://github.com/Ar-maan05/tokendrift"
 Issues = "https://github.com/Ar-maan05/tokendrift/issues"

@@ -47,6 +47,31 @@ app = typer.Typer(
 _console = Console()
 
 
+def version_callback(value: bool) -> None:
+    if value:
+        import importlib.metadata
+        try:
+            version_str = importlib.metadata.version("tokendrift")
+        except importlib.metadata.PackageNotFoundError:
+            version_str = "0.0.0-dev"
+        _console.print(f"tokendrift version {version_str}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main_callback(
+    version: bool | None = typer.Option(
+        None,
+        "--version",
+        callback=version_callback,
+        is_eager=True,
+        help="Show version and exit.",
+    ),
+) -> None:
+    pass
+
+
+
 # ---------------------------------------------------------------------------
 # diff
 # ---------------------------------------------------------------------------
@@ -126,14 +151,19 @@ def diff(
         render_vocab_diff(v_diff, model_a, model_b)
 
     # Build entries list
-    if text:
+    if text is not None:
         from tokendrift.models import CorpusEntry
 
         entries = [CorpusEntry(id="inline", text=text)]
     else:
         with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=_console) as p:
             t = p.add_task(f"Loading corpus {corpus}…", total=None)
-            entries = load_corpus(corpus)  # type: ignore[arg-type]
+            try:
+                entries = load_corpus(corpus)  # type: ignore[arg-type]
+            except Exception as exc:
+                p.remove_task(t)
+                _console.print(f"[red]Error loading corpus:[/] {exc}")
+                raise typer.Exit(1)
             p.remove_task(t)
         _console.print(f"[dim]Loaded {len(entries):,} corpus entries.[/]")
 
@@ -148,7 +178,7 @@ def diff(
         diffs = differ.diff_many(pairs, tok_a, tok_b)
         p.remove_task(t)
 
-    if text:
+    if text is not None:
         # Single-entry detail view
         render_entry_detail(diffs[0], model_a, model_b)
     else:
@@ -222,9 +252,14 @@ def cost(
     """
     with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=_console) as p:
         t = p.add_task("Loading…", total=None)
-        tok_a = TokenizerLoader.load(model_a)
-        tok_b = TokenizerLoader.load(model_b)
-        entries = load_corpus(corpus)
+        try:
+            tok_a = TokenizerLoader.load(model_a)
+            tok_b = TokenizerLoader.load(model_b)
+            entries = load_corpus(corpus)
+        except Exception as exc:
+            p.remove_task(t)
+            _console.print(f"[red]Error:[/] {exc}")
+            raise typer.Exit(1)
         p.remove_task(t)
 
     differ = EncodingDiffer(detect_boundaries=False)
@@ -256,8 +291,12 @@ def entry(
       tokendrift entry cl100k_base o200k_base \\
           --text "ChatGPT rewrites biostatistical significance tests"
     """
-    tok_a = TokenizerLoader.load(model_a)
-    tok_b = TokenizerLoader.load(model_b)
+    try:
+        tok_a = TokenizerLoader.load(model_a)
+        tok_b = TokenizerLoader.load(model_b)
+    except Exception as exc:
+        _console.print(f"[red]Failed to load tokenizer:[/] {exc}")
+        raise typer.Exit(1)
     differ = EncodingDiffer(detect_boundaries=True, word_tokenizer=word_tok)  # type: ignore[arg-type]
     d = differ.diff(text, tok_a, tok_b, entry_id="inline")
     render_entry_detail(d, model_a, model_b)
