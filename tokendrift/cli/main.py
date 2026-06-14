@@ -50,6 +50,7 @@ _console = Console()
 def version_callback(value: bool) -> None:
     if value:
         import importlib.metadata
+
         try:
             version_str = importlib.metadata.version("tokendrift")
         except importlib.metadata.PackageNotFoundError:
@@ -69,7 +70,6 @@ def main_callback(
     ),
 ) -> None:
     pass
-
 
 
 # ---------------------------------------------------------------------------

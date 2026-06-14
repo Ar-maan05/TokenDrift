@@ -120,4 +120,3 @@ def test_version_flag():
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
     assert "tokendrift version" in result.stdout
-
