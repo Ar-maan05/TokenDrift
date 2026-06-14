@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tokendrift"
-version = "0.1.0"
+version = "1.0.0"
 description = "Token-count, cost, and vocabulary diffing for LLM tokenizer changes"
 readme = "README.md"
 license = "MIT"
@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 authors = [{ name = "Armaan Sandhu", email = "asandhu05@wpi.edu" }]
 keywords = ["llm", "tokenizer", "diff", "regression", "nlp"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -52,7 +52,7 @@ Issues = "https://github.com/Ar-maan05/tokendrift/issues"
 Changelog = "https://github.com/Ar-maan05/tokendrift/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 include = ["tokendrift*"]
 
 [tool.setuptools.package-data]
@@ -61,6 +61,7 @@ tokendrift = ["py.typed"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+pythonpath = ["src"]
 
 [tool.coverage.run]
 source = ["tokendrift"]
@@ -74,5 +75,5 @@ target-version = "py310"
 select = ["E", "F", "I", "UP"]
 
 [tool.pyright]
-include = ["tokendrift"]
+include = ["src/tokendrift"]
 pythonVersion = "3.10"

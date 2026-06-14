@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-14
+
+First stable release. The CI regression-gate workflow that the project was
+built toward is now in place and the public API is considered stable.
+
+### Added
+- **`baseline` command** and `build_baseline()`: snapshot per-entry and total
+  token counts for a corpus under one tokenizer into a versioned JSON file you
+  commit to your repository.
+- **`ci` command** and `run_ci()`: re-encode a corpus under a candidate
+  tokenizer, compare against a committed baseline, and exit non-zero when the
+  drift breaks a threshold. Thresholds: `--max-total-growth-pct`,
+  `--max-entry-growth-pct`, `--price-per-1k` + `--max-cost-delta`,
+  `--fail-on-new`, and `--fail-on-missing`. Exit codes distinguish a real
+  regression (`1`) from a usage/IO error (`2`).
+- `CIThresholds`, `CIReport`, and `EntryDrift` are exported from the package
+  root; a `render_ci_report` Rich renderer shows totals, worst regressions, and
+  the reasons a gate failed.
+- README sections plus a GitHub Actions and pre-commit recipe for the gate, and
+  `examples/04_ci_gate.py`.
+- `TokenDiff.pct_change`, `CostReport.pct_token_change`, and
+  `CostReport.pct_cost_change` convenience properties.
+
+### Changed
+- Moved the package to a `src/` layout (`src/tokendrift/`). No import changes
+  for consumers; `import tokendrift` is unchanged.
+
 ## [0.1.0] - 2026-06-14
 
 Initial release.
@@ -36,5 +63,6 @@ Initial release.
   Boundary detection is opt-in via `--boundaries` on `diff`.
 - Ships type information (`py.typed`); tested on Python 3.10 through 3.13.
 
-[Unreleased]: https://github.com/Ar-maan05/tokendrift/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Ar-maan05/tokendrift/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Ar-maan05/tokendrift/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/Ar-maan05/tokendrift/releases/tag/v0.1.0

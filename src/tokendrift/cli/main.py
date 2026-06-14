@@ -9,6 +9,8 @@ diff        Diff two tokenizers against a corpus or a single text snippet.
 vocab-diff  Compare vocabularies only (no corpus required).
 entry       Inspect a single corpus entry in detail.
 cost        Generate a cost impact report.
+baseline    Snapshot token counts for a corpus under one tokenizer.
+ci          Gate a build on token drift against a committed baseline.
 """
 
 from __future__ import annotations
@@ -19,12 +21,19 @@ import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
+from tokendrift.core.baseline import (
+    Baseline,
+    CIThresholds,
+    build_baseline,
+    run_ci,
+)
 from tokendrift.core.differ import EncodingDiffer
 from tokendrift.core.loader import TokenizerLoader
 from tokendrift.core.vocab import VocabDiffer
 from tokendrift.corpus.loaders import load_corpus
 from tokendrift.report.cost import CostCalculator
 from tokendrift.report.terminal import (
+    render_ci_report,
     render_cost_report,
     render_encoding_diff,
     render_entry_detail,
@@ -300,6 +309,151 @@ def entry(
     differ = EncodingDiffer(detect_boundaries=True, word_tokenizer=word_tok)  # type: ignore[arg-type]
     d = differ.diff(text, tok_a, tok_b, entry_id="inline")
     render_entry_detail(d, model_a, model_b)
+
+
+# ---------------------------------------------------------------------------
+# baseline
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def baseline(
+    model: str = typer.Argument(..., help="Tokenizer to snapshot. E.g. 'cl100k_base' or 'Qwen/Qwen3-4B'."),
+    corpus: Path = typer.Option(..., "--corpus", "-c", help="Path to a JSONL / CSV / plain-text corpus file."),
+    output: Path = typer.Option(
+        Path("tokendrift.baseline.json"),
+        "--output",
+        "-o",
+        help="Where to write the baseline JSON.",
+    ),
+) -> None:
+    """
+    Snapshot per-entry token counts for a corpus under one tokenizer and write
+    them to a JSON file you commit to your repository.
+
+    Run this once against your current tokenizer, then gate future builds with
+    `tokendrift ci`.
+
+    Example:
+
+      tokendrift baseline cl100k_base --corpus prompts.jsonl -o tokendrift.baseline.json
+    """
+    with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=_console) as p:
+        t = p.add_task("Loading…", total=None)
+        try:
+            tok = TokenizerLoader.load(model)
+            entries = load_corpus(corpus)
+        except Exception as exc:
+            p.remove_task(t)
+            _console.print(f"[red]Error:[/] {exc}")
+            raise typer.Exit(1) from exc
+        p.remove_task(t)
+
+    snapshot = build_baseline(tok, entries)
+    snapshot.save(output)
+    _console.print(
+        f"[green]Wrote baseline[/] [bold]{output}[/]  "
+        f"({len(snapshot.entries):,} entries, {snapshot.total_tokens:,} tokens, "
+        f"tokenizer [bold]{snapshot.tokenizer}[/])"
+    )
+
+
+# ---------------------------------------------------------------------------
+# ci
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def ci(
+    model: str = typer.Argument(..., help="Tokenizer to test against the baseline (usually the new one)."),
+    baseline_path: Path = typer.Option(
+        Path("tokendrift.baseline.json"),
+        "--baseline",
+        "-b",
+        help="Path to the committed baseline JSON.",
+    ),
+    corpus: Path = typer.Option(
+        ..., "--corpus", "-c", help="Path to the corpus file (same one used for the baseline)."
+    ),
+    max_total_growth_pct: float | None = typer.Option(
+        None,
+        "--max-total-growth-pct",
+        help="Fail if total tokens grow by more than this percent.",
+    ),
+    max_entry_growth_pct: float | None = typer.Option(
+        None,
+        "--max-entry-growth-pct",
+        help="Fail if any single entry grows by more than this percent.",
+    ),
+    price_per_1k: float | None = typer.Option(
+        None,
+        "--price-per-1k",
+        help="USD per 1k tokens, used to estimate the cost delta.",
+    ),
+    max_cost_delta: float | None = typer.Option(
+        None,
+        "--max-cost-delta",
+        help="Fail if the estimated total cost grows by more than this many USD. Requires --price-per-1k.",
+    ),
+    fail_on_new: bool = typer.Option(
+        False,
+        "--fail-on-new",
+        help="Fail if the corpus has entries absent from the baseline.",
+    ),
+    fail_on_missing: bool = typer.Option(
+        False,
+        "--fail-on-missing",
+        help="Fail if the baseline has entries absent from the corpus.",
+    ),
+    top_n: int = typer.Option(10, "--top-n", help="Number of worst regressions to show."),
+) -> None:
+    """
+    Compare a corpus encoded under MODEL against a committed baseline and exit
+    non-zero if the token drift breaks any threshold.
+
+    Designed for CI pipelines and pre-commit hooks: a provider that silently
+    re-tokenizes can inflate your prompt token counts (and cost) with no code
+    change, and this command turns that into a build failure.
+
+    Example:
+
+      tokendrift ci o200k_base --baseline tokendrift.baseline.json \\
+          --corpus prompts.jsonl --max-total-growth-pct 2
+    """
+    if max_cost_delta is not None and price_per_1k is None:
+        _console.print("[red]Error:[/] --max-cost-delta requires --price-per-1k.")
+        raise typer.Exit(2)
+
+    try:
+        snapshot = Baseline.load(baseline_path)
+    except (FileNotFoundError, ValueError) as exc:
+        _console.print(f"[red]Error:[/] {exc}")
+        raise typer.Exit(2) from exc
+
+    with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=_console) as p:
+        t = p.add_task("Loading…", total=None)
+        try:
+            tok = TokenizerLoader.load(model)
+            entries = load_corpus(corpus)
+        except Exception as exc:
+            p.remove_task(t)
+            _console.print(f"[red]Error:[/] {exc}")
+            raise typer.Exit(2) from exc
+        p.remove_task(t)
+
+    thresholds = CIThresholds(
+        max_total_growth_pct=max_total_growth_pct,
+        max_entry_growth_pct=max_entry_growth_pct,
+        max_cost_delta_usd=max_cost_delta,
+        price_per_1k=price_per_1k,
+        fail_on_new_entries=fail_on_new,
+        fail_on_missing_entries=fail_on_missing,
+    )
+
+    report = run_ci(snapshot, tok, entries, thresholds)
+    render_ci_report(report, top_n=top_n)
+
+    raise typer.Exit(0 if report.passed else 1)
 
 
 # ---------------------------------------------------------------------------

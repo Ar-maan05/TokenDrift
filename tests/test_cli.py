@@ -120,3 +120,59 @@ def test_version_flag():
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
     assert "tokendrift version" in result.stdout
+
+
+# ---------------------------------------------------------------------------
+# baseline / ci
+# ---------------------------------------------------------------------------
+
+
+def test_baseline_writes_file(corpus, tmp_path):
+    out = tmp_path / "bl.json"
+    result = runner.invoke(app, ["baseline", "mockB", "--corpus", str(corpus), "-o", str(out)])
+    assert result.exit_code == 0
+    assert out.exists()
+    assert "Wrote baseline" in result.stdout
+
+
+def test_ci_passes_on_identical(corpus, tmp_path):
+    out = tmp_path / "bl.json"
+    runner.invoke(app, ["baseline", "mockA", "--corpus", str(corpus), "-o", str(out)])
+    result = runner.invoke(
+        app,
+        ["ci", "mockA", "--baseline", str(out), "--corpus", str(corpus), "--max-total-growth-pct", "0"],
+    )
+    assert result.exit_code == 0
+    assert "PASS" in result.stdout
+
+
+def test_ci_fails_on_growth(corpus, tmp_path):
+    out = tmp_path / "bl.json"
+    # baseline under bigram (fewer tokens), ci under char-level (more) -> growth
+    runner.invoke(app, ["baseline", "mockB", "--corpus", str(corpus), "-o", str(out)])
+    result = runner.invoke(
+        app,
+        ["ci", "mockA", "--baseline", str(out), "--corpus", str(corpus), "--max-total-growth-pct", "1"],
+    )
+    assert result.exit_code == 1
+    assert "FAIL" in result.stdout
+
+
+def test_ci_missing_baseline_exits_2(corpus, tmp_path):
+    result = runner.invoke(
+        app,
+        ["ci", "mockA", "--baseline", str(tmp_path / "nope.json"), "--corpus", str(corpus)],
+    )
+    assert result.exit_code == 2
+    assert "not found" in result.stdout
+
+
+def test_ci_cost_delta_requires_price(corpus, tmp_path):
+    out = tmp_path / "bl.json"
+    runner.invoke(app, ["baseline", "mockA", "--corpus", str(corpus), "-o", str(out)])
+    result = runner.invoke(
+        app,
+        ["ci", "mockA", "--baseline", str(out), "--corpus", str(corpus), "--max-cost-delta", "1.0"],
+    )
+    assert result.exit_code == 2
+    assert "requires --price-per-1k" in result.stdout

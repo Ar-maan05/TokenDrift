@@ -82,6 +82,13 @@ class TokenDiff:
         return self.count_delta != 0 or bool(self.boundary_violations)
 
     @property
+    def pct_change(self) -> float:
+        """Percentage change in token count (B vs A). Positive = grew."""
+        if self.token_count_a == 0:
+            return 0.0
+        return (self.count_delta / self.token_count_a) * 100
+
+    @property
     def split_count(self) -> int:
         """Number of words that gained tokens (SPLIT) under tokenizer B."""
         return sum(1 for v in self.boundary_violations if v.violation_type == ViolationType.SPLIT)
@@ -178,6 +185,19 @@ class CostReport:
         if self.total_tokens_a == 0:
             return 0.0
         return (self.token_delta / self.total_tokens_a) * 100
+
+    # Explicit alias for callers that want the token/cost distinction spelled out.
+    @property
+    def pct_token_change(self) -> float:
+        """Percentage change in token count. Alias of :attr:`pct_change`."""
+        return self.pct_change
+
+    @property
+    def pct_cost_change(self) -> float:
+        """Percentage change in cost. Returns 0.0 when pricing was not supplied."""
+        if not self.cost_a_usd or self.cost_delta_usd is None:
+            return 0.0
+        return (self.cost_delta_usd / self.cost_a_usd) * 100
 
 
 @dataclass

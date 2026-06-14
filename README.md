@@ -1,8 +1,8 @@
 # TokenDrift
 
 [![CI](https://github.com/Ar-maan05/tokendrift/actions/workflows/ci.yml/badge.svg)](https://github.com/Ar-maan05/tokendrift/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/tokendrift.svg)](https://pypi.org/project/tokendrift/)
-[![Python versions](https://img.shields.io/pypi/pyversions/tokendrift.svg)](https://pypi.org/project/tokendrift/)
+[![PyPI](https://img.shields.io/pypi/v/tokendrift.svg?v=2)](https://pypi.org/project/tokendrift/)
+[![Python versions](https://img.shields.io/pypi/pyversions/tokendrift.svg?v=2)](https://pypi.org/project/tokendrift/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Token-count, cost, and vocabulary diffing for LLM tokenizer changes.
@@ -89,6 +89,63 @@ tokendrift entry cl100k_base o200k_base \
   --text "ChatGPT rewrites biostatistical significance tests"
 ```
 
+## CI gating: catch tokenizer regressions automatically
+
+A provider can silently re-tokenize a model and inflate your prompt token
+counts (and bill) with no change on your side. TokenDrift turns that into a
+build failure.
+
+**1. Snapshot a baseline** against your current tokenizer and commit it:
+```bash
+tokendrift baseline cl100k_base --corpus prompts.jsonl -o tokendrift.baseline.json
+git add tokendrift.baseline.json
+```
+
+**2. Gate every build** by re-encoding the same corpus and comparing:
+```bash
+tokendrift ci o200k_base \
+  --baseline tokendrift.baseline.json \
+  --corpus prompts.jsonl \
+  --max-total-growth-pct 2 \
+  --max-entry-growth-pct 10
+```
+
+`ci` exits non-zero when any threshold is breached, so it fails the pipeline:
+
+| Flag | Fails the build when |
+|------|----------------------|
+| `--max-total-growth-pct` | total tokens grow by more than N% |
+| `--max-entry-growth-pct` | any single entry grows by more than N% |
+| `--price-per-1k` + `--max-cost-delta` | estimated cost grows by more than $X |
+| `--fail-on-new` | the corpus has entries missing from the baseline |
+| `--fail-on-missing` | the baseline has entries missing from the corpus |
+
+Exit codes: `0` pass, `1` drift exceeded a threshold, `2` usage/IO error
+(missing baseline, bad flags) so config mistakes are distinguishable from real
+regressions.
+
+**GitHub Actions:**
+```yaml
+- name: Guard against tokenizer drift
+  run: |
+    pip install tokendrift
+    tokendrift ci o200k_base \
+      --baseline tokendrift.baseline.json \
+      --corpus prompts.jsonl \
+      --max-total-growth-pct 2
+```
+
+**pre-commit** (`.pre-commit-config.yaml`):
+```yaml
+- repo: local
+  hooks:
+    - id: tokendrift-ci
+      name: tokendrift token-drift gate
+      entry: tokendrift ci o200k_base --baseline tokendrift.baseline.json --corpus prompts.jsonl --max-total-growth-pct 2
+      language: system
+      pass_filenames: false
+```
+
 ## Corpus format
 
 TokenDrift accepts JSONL (recommended), CSV, or plain text.
@@ -167,6 +224,20 @@ diffs = differ.diff_many(pairs, tok_a, tok_b)
 from tokendrift.report.cost import CostCalculator
 report = CostCalculator().compute(diffs, price_a=0.03, price_b=0.01)
 print(f"Cost delta: ${report.cost_delta_usd:.4f}")
+
+# Baseline + CI gate (programmatic equivalent of `tokendrift ci`)
+from tokendrift import build_baseline, run_ci, CIThresholds, Baseline
+
+snapshot = build_baseline(tok_a, entries)
+snapshot.save("tokendrift.baseline.json")
+
+result = run_ci(
+    Baseline.load("tokendrift.baseline.json"),
+    tok_b,
+    entries,
+    CIThresholds(max_total_growth_pct=2),
+)
+print("passed" if result.passed else f"failed: {result.failures}")
 ```
 
 ## Supported tokenizers
@@ -191,12 +262,13 @@ TOKENDRIFT_NETWORK_TESTS=1 pytest
 ## Project structure
 
 ```
-tokendrift/
+src/tokendrift/
 ├── core/
 │   ├── loader.py       # UnifiedTokenizer + backends (tiktoken, HuggingFace)
 │   ├── vocab.py        # VocabDiffer
 │   ├── differ.py       # EncodingDiffer
-│   └── boundary.py     # BoundaryDetector
+│   ├── boundary.py     # BoundaryDetector
+│   └── baseline.py     # Baseline snapshots + CI gating (build_baseline, run_ci)
 ├── corpus/
 │   └── loaders.py      # JSONL / CSV / plain-text corpus loading
 ├── report/
@@ -208,9 +280,7 @@ tokendrift/
 
 ## Roadmap
 
-The next milestone is turning the diff into a gate:
-
-- [ ] `ci` command: pin a corpus's token counts in a baseline and exit non-zero when a tokenizer change moves them (the feature that makes this CI infrastructure rather than a one-off diagnostic)
+- [x] `baseline` + `ci` commands: pin a corpus's token counts in a baseline and exit non-zero when a tokenizer change moves them (the feature that makes this CI infrastructure rather than a one-off diagnostic)
 - [ ] `gen-tests` command: generate a pytest regression suite pinning current behavior
 
 Later:

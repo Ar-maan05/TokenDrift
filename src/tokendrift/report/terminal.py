@@ -19,6 +19,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from tokendrift.core.baseline import CIReport
 from tokendrift.models import (
     CostReport,
     TokenDiff,
@@ -351,5 +352,74 @@ def render_entry_detail(
         c.print(vtbl)
     else:
         c.print("\n[dim]No boundary changes detected.[/]")
+
+    c.print()
+
+
+# ---------------------------------------------------------------------------
+# CI gate report
+# ---------------------------------------------------------------------------
+
+
+def render_ci_report(
+    report: CIReport,
+    top_n: int = 10,
+    console: Console | None = None,
+) -> None:
+    """
+    Render a :class:`CIReport` for a CI / pre-commit run.
+
+    Shows the totals, the worst per-entry regressions, any new/missing entries,
+    and a PASS / FAIL verdict with the reasons the gate failed.
+    """
+    c = console or _console
+
+    c.print()
+    verdict = "[bold green]PASS[/]" if report.passed else "[bold red]FAIL[/]"
+    header = (
+        f"TokenDrift CI  {verdict}  |  baseline [bold]{report.baseline_tokenizer}[/] "
+        f"→ current [bold]{report.current_tokenizer}[/]"
+    )
+    c.print(Panel(header, box=box.ROUNDED))
+
+    tbl = Table(box=box.SIMPLE, show_header=False)
+    tbl.add_column("Metric", style="bold")
+    tbl.add_column("Value", justify="right")
+    tbl.add_row("Baseline tokens", f"{report.total_baseline:,}")
+    tbl.add_row("Current tokens", f"{report.total_current:,}")
+    dcol = "red" if report.token_delta > 0 else "green"
+    pct = "inf" if report.total_pct == float("inf") else f"{report.total_pct:+.2f}%"
+    tbl.add_row("Token delta", f"[{dcol}]{report.token_delta:+,} ({pct})[/]")
+    if report.cost_delta_usd is not None:
+        ccol = "red" if report.cost_delta_usd > 0 else "green"
+        tbl.add_row("Est. cost delta", f"[{ccol}]${report.cost_delta_usd:+.4f}[/]")
+    if report.new_entries:
+        tbl.add_row("New entries", f"{len(report.new_entries):,}")
+    if report.missing_entries:
+        tbl.add_row("Missing entries", f"{len(report.missing_entries):,}")
+    c.print(tbl)
+
+    regressions = report.regressions
+    if regressions:
+        c.print(f"\n[bold]Top regressions (worst {min(top_n, len(regressions))} of {len(regressions)}):[/]")
+        rtbl = Table(box=box.SIMPLE, show_header=True)
+        rtbl.add_column("Entry", style="cyan")
+        rtbl.add_column("Baseline", justify="right")
+        rtbl.add_column("Current", justify="right")
+        rtbl.add_column("Delta", justify="right")
+        for d in regressions[:top_n]:
+            epct = "inf" if d.pct == float("inf") else f"{d.pct:+.1f}%"
+            rtbl.add_row(
+                d.entry_id,
+                str(d.baseline_tokens),
+                str(d.current_tokens),
+                f"[red]{d.delta:+} ({epct})[/]",
+            )
+        c.print(rtbl)
+
+    if not report.passed:
+        c.print("\n[bold red]Gate failed:[/]")
+        for reason in report.failures:
+            c.print(f"  [red]✗[/] {reason}")
 
     c.print()

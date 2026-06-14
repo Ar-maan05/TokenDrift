@@ -36,6 +36,14 @@ __author__ = "Armaan Sandhu"
 # internal submodule layout.  Third-party type checkers follow these imports.
 # ---------------------------------------------------------------------------
 
+from tokendrift.core.baseline import (
+    Baseline,
+    CIReport,
+    CIThresholds,
+    EntryDrift,
+    build_baseline,
+    run_ci,
+)
 from tokendrift.core.boundary import BoundaryDetector
 from tokendrift.core.differ import EncodingDiffer
 from tokendrift.core.loader import TokenizerLoader, UnifiedTokenizer
@@ -64,6 +72,13 @@ __all__ = [
     "BoundaryDetector",
     # Reports
     "CostCalculator",
+    # Baseline / CI gating
+    "Baseline",
+    "build_baseline",
+    "run_ci",
+    "CIThresholds",
+    "CIReport",
+    "EntryDrift",
     # Corpus
     "load_corpus",
     # Data models

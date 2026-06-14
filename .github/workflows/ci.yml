@@ -42,7 +42,7 @@ jobs:
         run: ruff format --check .
 
       - name: Type check (pyright)
-        run: pyright tokendrift/
+        run: pyright src/tokendrift/
 
       - name: Tests (pytest)
         run: pytest tests/ -v --tb=short --cov=tokendrift --cov-report=term-missing
@@ -53,3 +53,5 @@ jobs:
           tokendrift diff cl100k_base o200k_base --text "biostatistical significance" --no-vocab
           tokendrift diff cl100k_base o200k_base --corpus tests/fixtures/corpus.jsonl --no-vocab --boundaries
           tokendrift cost cl100k_base o200k_base --corpus tests/fixtures/corpus.jsonl --price-a 0.03 --price-b 0.01
+          tokendrift baseline cl100k_base --corpus tests/fixtures/corpus.jsonl -o /tmp/tokendrift.baseline.json
+          tokendrift ci cl100k_base --baseline /tmp/tokendrift.baseline.json --corpus tests/fixtures/corpus.jsonl --max-total-growth-pct 0
