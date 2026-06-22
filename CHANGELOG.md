@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-22
+
+This release extends TokenDrift from a tokenizer diff tool into a pre-dispatch
+cost, budget, and governance toolkit. Every new feature reasons about more than
+raw token counts by mapping a model name to its tokenizer, context window, and
+input price through a new registry.
+
+### Added
+- **Model registry** (`ModelRegistry`, `ModelInfo`): maps a friendly model name
+  to its tokenizer, context window, and input price. Ships an indicative default
+  set (verify pricing before relying on it), loads from and saves to JSON, caches
+  resolved tokenizers, and accepts custom in-memory tokenizers via
+  `register_tokenizer`. New `tokendrift models` command lists the registry.
+- **Pre-dispatch estimation** (`CostEstimator`, `estimate` command): scores one
+  prompt across many models for token count, input cost, and context-window fit
+  before any request is sent. Reports the tokenization spread between models,
+  which is what drives cost and latency apart between providers. Powers a
+  playground cost overlay and a routing-engine budget check (`CostEstimator.fits`
+  uses the correct tokenizer instead of a character-count approximation).
+- **Migration safety checker** (`migrate_report`, `migrate` command): for a
+  corpus of prompts, reports token delta, cost delta, vocabulary shift, and every
+  prompt that would overflow the target model's context window. Serialises to a
+  machine-readable dict for an audit or compliance layer.
+- **Prompt-compression feedback** (`compression_report`,
+  `compression_report_corpus`, `compress` command): measures the real token and
+  cost saving of a compressed prompt per model, since the saving is tokenizer
+  dependent.
+- **Cost forecasting** (`forecast`, `forecast` command): projects input-token
+  spend across candidate models for a target request volume using measured
+  per-request token averages from a prompt sample.
+- **Tokenizer drift alerts** (`check_drift`, `alert_to_json`, `drift-alert`
+  command): classifies drift against a committed baseline as OK / WARN /
+  CRITICAL with configurable thresholds, for a compliance background job. Emits
+  JSON and exits non-zero on CRITICAL (or on WARN with `--fail-on-warn`).
+- `--json` output on `estimate`, `migrate`, `forecast`, and `drift-alert` for
+  pipeline consumption.
+- `examples/05_cost_governance.py` demonstrating the new library APIs.
+
+### Notes
+- HuggingFace Hub tokenizers continue to work anywhere a tokenizer identifier is
+  accepted, including registry entries, so a comparison can mix a HuggingFace
+  model and an API-provider model in a single estimate or migration.
+
 ## [1.0.0] - 2026-06-14
 
 First stable release. The CI regression-gate workflow that the project was

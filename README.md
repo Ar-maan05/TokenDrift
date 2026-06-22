@@ -146,6 +146,121 @@ regressions.
       pass_filenames: false
 ```
 
+## Cost, budget, and governance (v1.1.0)
+
+The commands above diff two tokenizers. The commands below add cost, budget, and
+governance on top, by mapping a model name to its tokenizer, context window, and
+input price through a model registry.
+
+The registry ships an indicative default set of models. Pricing and context
+windows change often and vary by provider contract, so treat the shipped numbers
+as starting points: verify them and override with your own registry JSON before
+trusting the cost output for budgets or audits.
+
+```bash
+# Inspect the registry
+tokendrift models
+
+# Use your own registry
+tokendrift models --registry my_models.json
+```
+
+A registry JSON file is a list of model objects (only `name` and `tokenizer` are
+required):
+```json
+[
+  {
+    "name": "gpt-4o",
+    "tokenizer": "o200k_base",
+    "context_window": 128000,
+    "price_per_1k_input": 0.0025,
+    "max_output_tokens": 16384,
+    "provider": "openai"
+  },
+  { "name": "my-hf-model", "tokenizer": "Qwen/Qwen3-4B", "context_window": 32768 }
+]
+```
+
+Because `tokenizer` accepts any identifier `TokenizerLoader` understands, a
+single registry (and a single comparison) can mix HuggingFace Hub models with
+API-provider models.
+
+### Estimate cost and context-window fit before dispatch
+
+Score one prompt across several models for token count, input cost, and whether
+it fits each context window, before any request is sent. This is the data behind
+a playground cost overlay and a router's pre-dispatch budget check.
+
+```bash
+tokendrift estimate gpt-4o,gpt-4-turbo --text "Summarise this contract."
+```
+
+```
+──────────────────── Cost & Budget Estimate ────────────────────
+  Model         Tokens   Cost (in)            Context   Headroom   Fit
+  gpt-4o             6    $0.0000 (cheapest)   128,000    111,610   ok
+  gpt-4-turbo        6    $0.0001              128,000    123,898   ok
+
+  Tokenization spread: 0 tokens (0.0% between lowest and highest).
+```
+
+A higher spread means the same text tokenizes very differently across models,
+which is what drives cost and latency apart between providers. Add `--json` for
+machine consumption, `--file prompt.txt` to read the prompt from a file, and
+`--reserved-output N` to model a known completion budget in the fit check.
+
+### Model migration safety check
+
+Before switching a corpus of prompts from one model to another, see the token
+delta, cost delta, vocabulary shift, and every prompt that would overflow the
+target context window:
+
+```bash
+tokendrift migrate gpt-4-turbo gpt-4o --corpus prompts.jsonl --json
+```
+
+The `--json` form emits a flat report suitable for an audit or compliance layer,
+including the list of overflowing prompts with how far over the limit each is.
+
+### Prompt-compression savings, per model
+
+A compression step removes characters, but the token saving is tokenizer
+dependent. Measure the real saving (and cost saving) under each candidate model
+so a compression decision is model aware:
+
+```bash
+tokendrift compress gpt-4o,gpt-4-turbo --original raw.txt --compressed small.txt
+```
+
+### Org-level spend forecast
+
+Project input-token spend across candidate models for a target request volume,
+using measured per-request token averages from a representative prompt sample:
+
+```bash
+tokendrift forecast gpt-4o,gpt-4o-mini --corpus sample.jsonl --requests 1000000
+```
+
+The forecast covers input tokens only (the part measurable from prompt text);
+output cost depends on generation length.
+
+### Tokenizer drift alerts for compliance
+
+A provider silently updating their tokenizer between model versions is an audit
+event. Run this as a background job against new versions and classify the drift
+against a committed baseline as OK / WARN / CRITICAL:
+
+```bash
+tokendrift drift-alert o200k_base \
+  --baseline tokendrift.baseline.json \
+  --corpus prompts.jsonl \
+  --warn-pct 2 --critical-pct 10 --json
+```
+
+It exits non-zero on CRITICAL (or on WARN with `--fail-on-warn`) and emits a JSON
+alert for an audit pipeline. This is the alerting view of the same comparison the
+`ci` command gates on.
+
 ## Corpus format
 
 TokenDrift accepts JSONL (recommended), CSV, or plain text.
@@ -240,6 +355,48 @@ result = run_ci(
 print("passed" if result.passed else f"failed: {result.failures}")
 ```
 
+### Cost, budget, and governance APIs (v1.1.0)
+
+```python
+from tokendrift import (
+    ModelRegistry, ModelInfo, CostEstimator,
+    migrate_report, compression_report, forecast,
+    check_drift, build_baseline,
+)
+
+# Built-in registry, or load your own with ModelRegistry.from_json("models.json"),
+# and add models (including HuggingFace ones) at runtime.
+registry = ModelRegistry.default()
+registry.add(ModelInfo(name="my-hf", tokenizer="Qwen/Qwen3-4B", context_window=32768))
+
+# Pre-dispatch estimate across models (playground overlay / router budget check)
+est = CostEstimator(registry)
+result = est.estimate("Summarise this contract.", ["gpt-4o", "gpt-4-turbo"])
+for e in result.estimates:
+    print(e.model, e.token_count, e.cost_usd, e.fits)
+print("spread:", result.token_spread, f"({result.divergence_pct:.1f}%)")
+
+# A cheap boolean guard for a router
+if est.fits(prompt, "gpt-4o", reserved_output=1000):
+    ...  # safe to dispatch
+
+# Migration safety report (serialises for audit via .to_dict())
+report = migrate_report(entries, "gpt-4-turbo", "gpt-4o", registry=registry)
+print(report.token_delta, report.cost_delta_usd, len(report.overflows))
+
+# Compression savings, per model
+csav = compression_report(original_text, compressed_text, ["gpt-4o"], registry=registry)
+
+# Org-level spend forecast
+fc = forecast(entries, ["gpt-4o", "gpt-4o-mini"], projected_requests=1_000_000, registry=registry)
+print(fc.cheapest.model, fc.cheapest.projected_cost_usd)
+
+# Tokenizer drift alert against a committed baseline
+baseline = build_baseline(tok_a, entries)
+alert = check_drift(baseline, tok_b, entries, warn_pct=2, critical_pct=10)
+print(alert.severity.value, alert.triggered, alert.to_dict())
+```
+
 ## Supported tokenizers
 
 | Source | Example identifier | Notes |
@@ -268,7 +425,13 @@ src/tokendrift/
 │   ├── vocab.py        # VocabDiffer
 │   ├── differ.py       # EncodingDiffer
 │   ├── boundary.py     # BoundaryDetector
-│   └── baseline.py     # Baseline snapshots + CI gating (build_baseline, run_ci)
+│   ├── baseline.py     # Baseline snapshots + CI gating (build_baseline, run_ci)
+│   ├── registry.py     # ModelRegistry + ModelInfo (tokenizer, window, price)
+│   ├── estimate.py     # CostEstimator (pre-dispatch cost + budget fit)
+│   ├── migrate.py      # migrate_report (model migration safety)
+│   ├── compression.py  # compression_report (per-model savings)
+│   ├── forecast.py     # forecast (org-level spend projection)
+│   └── alert.py        # check_drift (tokenizer drift alerts)
 ├── corpus/
 │   └── loaders.py      # JSONL / CSV / plain-text corpus loading
 ├── report/
@@ -281,6 +444,7 @@ src/tokendrift/
 ## Roadmap
 
 - [x] `baseline` + `ci` commands: pin a corpus's token counts in a baseline and exit non-zero when a tokenizer change moves them (the feature that makes this CI infrastructure rather than a one-off diagnostic)
+- [x] cost, budget, and governance toolkit (v1.1.0): model registry plus `estimate`, `migrate`, `compress`, `forecast`, and `drift-alert` commands for pre-dispatch cost and context-window checks, migration safety, and compliance drift alerts
 - [ ] `gen-tests` command: generate a pytest regression suite pinning current behavior
 
 Later:

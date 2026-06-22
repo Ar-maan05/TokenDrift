@@ -36,6 +36,7 @@ __author__ = "Armaan Sandhu"
 # internal submodule layout.  Third-party type checkers follow these imports.
 # ---------------------------------------------------------------------------
 
+from tokendrift.core.alert import alert_to_json, check_drift
 from tokendrift.core.baseline import (
     Baseline,
     CIReport,
@@ -45,14 +46,30 @@ from tokendrift.core.baseline import (
     run_ci,
 )
 from tokendrift.core.boundary import BoundaryDetector
+from tokendrift.core.compression import compression_report, compression_report_corpus
 from tokendrift.core.differ import EncodingDiffer
+from tokendrift.core.estimate import CostEstimator
+from tokendrift.core.forecast import forecast
 from tokendrift.core.loader import TokenizerLoader, UnifiedTokenizer
+from tokendrift.core.migrate import migrate_report
+from tokendrift.core.registry import ModelRegistry
 from tokendrift.core.vocab import VocabDiffer
 from tokendrift.corpus.loaders import load_corpus
 from tokendrift.models import (
+    AlertSeverity,
     BoundaryViolation,
+    CompressionReport,
+    CompressionSaving,
     CorpusEntry,
     CostReport,
+    DriftAlert,
+    ForecastReport,
+    MigrationOverflow,
+    MigrationReport,
+    ModelEstimate,
+    ModelForecast,
+    ModelInfo,
+    MultiModelEstimate,
     PromptCostDelta,
     RemappedEntry,
     TokenDiff,
@@ -81,6 +98,31 @@ __all__ = [
     "EntryDrift",
     # Corpus
     "load_corpus",
+    # Model registry
+    "ModelRegistry",
+    "ModelInfo",
+    # Pre-dispatch estimation / budget
+    "CostEstimator",
+    "ModelEstimate",
+    "MultiModelEstimate",
+    # Migration safety
+    "migrate_report",
+    "MigrationReport",
+    "MigrationOverflow",
+    # Compression feedback
+    "compression_report",
+    "compression_report_corpus",
+    "CompressionReport",
+    "CompressionSaving",
+    # Cost forecasting
+    "forecast",
+    "ForecastReport",
+    "ModelForecast",
+    # Drift alerts
+    "check_drift",
+    "alert_to_json",
+    "DriftAlert",
+    "AlertSeverity",
     # Data models
     "TokenDiff",
     "VocabDiff",

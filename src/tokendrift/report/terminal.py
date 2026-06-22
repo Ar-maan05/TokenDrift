@@ -21,7 +21,13 @@ from rich.table import Table
 
 from tokendrift.core.baseline import CIReport
 from tokendrift.models import (
+    AlertSeverity,
+    CompressionReport,
     CostReport,
+    DriftAlert,
+    ForecastReport,
+    MigrationReport,
+    MultiModelEstimate,
     TokenDiff,
     ViolationType,
     VocabDiff,
@@ -422,4 +428,245 @@ def render_ci_report(
         for reason in report.failures:
             c.print(f"  [red]✗[/] {reason}")
 
+    c.print()
+
+
+# ---------------------------------------------------------------------------
+# Multi-model estimate (playground / budget overlay)
+# ---------------------------------------------------------------------------
+
+
+def _fmt_cost(value: float | None) -> str:
+    return "[dim]n/a[/]" if value is None else f"${value:.4f}"
+
+
+def render_estimate(
+    result: MultiModelEstimate,
+    console: Console | None = None,
+) -> None:
+    """
+    Render a :class:`MultiModelEstimate`: one row per model with token count,
+    estimated input cost, and context-window fit, plus the tokenization spread.
+    """
+    c = console or _console
+
+    c.print()
+    c.rule("[bold cyan]Cost & Budget Estimate[/]")
+    c.print(f"[dim]Input: {result.text_chars:,} chars across {len(result.estimates)} model(s)[/]\n")
+
+    tbl = Table(box=box.SIMPLE_HEAD, show_header=True)
+    tbl.add_column("Model", style="cyan")
+    tbl.add_column("Tokens", justify="right")
+    tbl.add_column("Cost (in)", justify="right")
+    tbl.add_column("Context", justify="right")
+    tbl.add_column("Headroom", justify="right")
+    tbl.add_column("Fit")
+
+    cheapest = result.cheapest
+    for e in result.estimates:
+        if e.fits is None:
+            fit = "[dim]?[/]"
+        elif e.fits:
+            fit = "[green]ok[/]"
+        else:
+            fit = "[bold red]OVERFLOW[/]"
+        window = f"{e.context_window:,}" if e.context_window is not None else "[dim]?[/]"
+        headroom = f"{e.headroom:,}" if e.headroom is not None else "[dim]?[/]"
+        cost = _fmt_cost(e.cost_usd)
+        if cheapest is not None and e is cheapest:
+            cost = f"[green]{cost}[/] [dim](cheapest)[/]"
+        tbl.add_row(e.model, f"{e.token_count:,}", cost, window, headroom, fit)
+
+    c.print(tbl)
+
+    if len(result.estimates) > 1:
+        c.print(
+            f"\n[bold]Tokenization spread:[/] {result.token_spread:,} tokens "
+            f"({result.divergence_pct:.1f}% between lowest and highest). "
+            "[dim]Higher spread means cost and latency diverge more between providers.[/]"
+        )
+    c.print()
+
+
+# ---------------------------------------------------------------------------
+# Migration report
+# ---------------------------------------------------------------------------
+
+
+def render_migration_report(
+    report: MigrationReport,
+    top_n: int = 10,
+    console: Console | None = None,
+) -> None:
+    """Render a :class:`MigrationReport` for a model switch."""
+    c = console or _console
+
+    c.print()
+    c.rule(f"[bold cyan]Migration Report[/]  [dim]{report.source_model}[/] → [dim]{report.target_model}[/]")
+    c.print()
+
+    tbl = Table(box=box.SIMPLE_HEAD, show_header=False, padding=(0, 2))
+    tbl.add_column(style="dim")
+    tbl.add_column(justify="right")
+    tbl.add_row("Prompts", f"{len(report.per_prompt):,}")
+    tbl.add_row("Tokens (source)", f"{report.total_tokens_source:,}")
+    tbl.add_row("Tokens (target)", f"{report.total_tokens_target:,}")
+    dcol = "red" if report.token_delta > 0 else "green"
+    tbl.add_row("Token delta", f"[{dcol}]{report.token_delta:+,} ({report.pct_token_change:+.1f}%)[/]")
+
+    if report.cost_source_usd is not None and report.cost_target_usd is not None:
+        tbl.add_row("", "")
+        tbl.add_row("Cost (source)", f"${report.cost_source_usd:.4f}")
+        tbl.add_row("Cost (target)", f"${report.cost_target_usd:.4f}")
+        if report.cost_delta_usd is not None:
+            ccol = "red" if report.cost_delta_usd > 0 else "green"
+            tbl.add_row(
+                "Cost delta",
+                f"[{ccol}]${report.cost_delta_usd:+.4f} ({report.pct_cost_change:+.1f}%)[/]",
+            )
+
+    if report.vocab is not None:
+        tbl.add_row("", "")
+        remap_style = "bold red" if report.vocab.has_remappings else "dim"
+        tbl.add_row("Vocab added", f"{len(report.vocab.added):,}")
+        tbl.add_row("Vocab deleted", f"{len(report.vocab.deleted):,}")
+        tbl.add_row("Vocab remapped", f"[{remap_style}]{report.remapped_token_count:,}[/]")
+
+    ocol = "bold red" if report.overflows else "green"
+    tbl.add_row("", "")
+    tbl.add_row("Context overflows", f"[{ocol}]{len(report.overflows):,}[/]")
+    c.print(tbl)
+
+    if report.overflows:
+        c.print(f"\n[bold red]Prompts that overflow {report.target_model}'s context window:[/]")
+        otbl = Table(box=box.SIMPLE, show_header=True)
+        otbl.add_column("Entry", style="cyan")
+        otbl.add_column("Target tokens", justify="right")
+        otbl.add_column("Window", justify="right")
+        otbl.add_column("Over by", justify="right")
+        for o in report.overflows[:top_n]:
+            otbl.add_row(
+                o.entry_id,
+                f"{o.target_tokens:,}",
+                f"{o.context_window:,}",
+                f"[red]+{o.overflow:,}[/]",
+            )
+        if len(report.overflows) > top_n:
+            otbl.add_row(f"… and {len(report.overflows) - top_n} more", "", "", "")
+        c.print(otbl)
+
+    c.print()
+
+
+# ---------------------------------------------------------------------------
+# Compression report
+# ---------------------------------------------------------------------------
+
+
+def render_compression_report(
+    report: CompressionReport,
+    console: Console | None = None,
+) -> None:
+    """Render a :class:`CompressionReport`."""
+    c = console or _console
+
+    c.print()
+    c.rule("[bold cyan]Compression Savings[/]")
+    c.print(
+        f"[dim]Characters: {report.original_chars:,} → {report.compressed_chars:,} ({report.char_pct_saved:+.1f}%)[/]\n"
+    )
+
+    tbl = Table(box=box.SIMPLE_HEAD, show_header=True)
+    tbl.add_column("Model", style="cyan")
+    tbl.add_column("Original", justify="right")
+    tbl.add_column("Compressed", justify="right")
+    tbl.add_column("Saved", justify="right")
+    tbl.add_column("% saved", justify="right")
+    tbl.add_column("Cost saved", justify="right")
+
+    for s in report.savings:
+        tbl.add_row(
+            s.model,
+            f"{s.original_tokens:,}",
+            f"{s.compressed_tokens:,}",
+            f"[green]{s.tokens_saved:,}[/]",
+            f"{s.pct_saved:.1f}%",
+            _fmt_cost(s.cost_saved_usd),
+        )
+    c.print(tbl)
+    c.print()
+
+
+# ---------------------------------------------------------------------------
+# Forecast report
+# ---------------------------------------------------------------------------
+
+
+def render_forecast_report(
+    report: ForecastReport,
+    console: Console | None = None,
+) -> None:
+    """Render a :class:`ForecastReport`."""
+    c = console or _console
+
+    c.print()
+    c.rule("[bold cyan]Cost Forecast[/]")
+    c.print(f"[dim]Projected to {report.projected_requests:,} requests (input tokens only)[/]\n")
+
+    tbl = Table(box=box.SIMPLE_HEAD, show_header=True)
+    tbl.add_column("Model", style="cyan")
+    tbl.add_column("Avg tokens/req", justify="right")
+    tbl.add_column("Projected tokens", justify="right")
+    tbl.add_column("Projected cost", justify="right")
+
+    cheapest = report.cheapest
+    for f in report.forecasts:
+        cost = _fmt_cost(f.projected_cost_usd)
+        if cheapest is not None and f is cheapest:
+            cost = f"[green]{cost}[/] [dim](cheapest)[/]"
+        tbl.add_row(
+            f.model,
+            f"{f.avg_tokens_per_request:,.1f}",
+            f"{f.projected_tokens:,}",
+            cost,
+        )
+    c.print(tbl)
+    c.print()
+
+
+# ---------------------------------------------------------------------------
+# Drift alert
+# ---------------------------------------------------------------------------
+
+
+def render_drift_alert(
+    alert: DriftAlert,
+    console: Console | None = None,
+) -> None:
+    """Render a :class:`DriftAlert`."""
+    c = console or _console
+
+    color = {
+        AlertSeverity.OK: "green",
+        AlertSeverity.WARN: "yellow",
+        AlertSeverity.CRITICAL: "bold red",
+    }[alert.severity]
+
+    c.print()
+    header = (
+        f"Tokenizer Drift  [{color}]{alert.severity.value}[/]  |  "
+        f"baseline [bold]{alert.baseline_tokenizer}[/] → current [bold]{alert.current_tokenizer}[/]"
+    )
+    c.print(Panel(header, box=box.ROUNDED))
+
+    pct = "inf" if alert.total_pct == float("inf") else f"{alert.total_pct:+.2f}%"
+    tbl = Table(box=box.SIMPLE, show_header=False)
+    tbl.add_column("Metric", style="bold")
+    tbl.add_column("Value", justify="right")
+    tbl.add_row("Total drift", f"[{color}]{pct}[/]")
+    tbl.add_row("Token delta", f"{alert.token_delta:+,}")
+    tbl.add_row("Warn / critical", f"{alert.warn_pct:g}% / {alert.critical_pct:g}%")
+    if alert.cost_delta_usd is not None:
+        tbl.add_row("Est. cost delta", f"${alert.cost_delta_usd:+.4f}")
+    c.print(tbl)
     c.print()

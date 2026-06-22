@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tokendrift"
-version = "1.0.0"
+version = "1.1.0"
 description = "Token-count, cost, and vocabulary diffing for LLM tokenizer changes"
 readme = "README.md"
 license = "MIT"

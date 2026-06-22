@@ -172,3 +172,98 @@ def test_render_entry_detail_no_violations(cap):
     diff = TokenDiff("p1", "hi", 1, 1, 0, 2)
     render_entry_detail(diff, "A", "B", console=cap)
     assert "No boundary changes" in _text(cap)
+
+
+# ---------------------------------------------------------------------------
+# v1.1.0 renderers
+# ---------------------------------------------------------------------------
+
+from tokendrift.models import (  # noqa: E402
+    AlertSeverity,
+    CompressionReport,
+    CompressionSaving,
+    DriftAlert,
+    ForecastReport,
+    MigrationOverflow,
+    MigrationReport,
+    ModelEstimate,
+    ModelForecast,
+    MultiModelEstimate,
+)
+from tokendrift.report.terminal import (  # noqa: E402
+    render_compression_report,
+    render_drift_alert,
+    render_estimate,
+    render_forecast_report,
+    render_migration_report,
+)
+
+
+def test_render_estimate(cap):
+    result = MultiModelEstimate(
+        text_chars=10,
+        estimates=[
+            ModelEstimate("gpt-4o", "o200k_base", 10, 0.001, 128_000, 16, True, 100),
+            ModelEstimate("local", "x", 20, None, None, 0, None, None),
+        ],
+    )
+    render_estimate(result, console=cap)
+    out = _text(cap)
+    assert "gpt-4o" in out
+    assert "Tokenization spread" in out
+    assert "cheapest" in out
+
+
+def test_render_estimate_overflow(cap):
+    result = MultiModelEstimate(
+        text_chars=10,
+        estimates=[ModelEstimate("m", "t", 200, None, 100, 0, False, -100)],
+    )
+    render_estimate(result, console=cap)
+    assert "OVERFLOW" in _text(cap)
+
+
+def test_render_migration_report(cap):
+    report = MigrationReport(
+        source_model="a",
+        target_model="b",
+        total_tokens_source=100,
+        total_tokens_target=120,
+        overflows=[MigrationOverflow("p1", 200, 128, 0)],
+    )
+    render_migration_report(report, console=cap)
+    out = _text(cap)
+    assert "Migration Report" in out
+    assert "overflow" in out.lower()
+    assert "p1" in out
+
+
+def test_render_compression_report(cap):
+    report = CompressionReport(
+        original_chars=100,
+        compressed_chars=50,
+        savings=[CompressionSaving("m", "t", 40, 20, 0.001)],
+    )
+    render_compression_report(report, console=cap)
+    out = _text(cap)
+    assert "Compression Savings" in out
+    assert "50.0%" in out
+
+
+def test_render_forecast_report(cap):
+    report = ForecastReport(
+        projected_requests=1000,
+        forecasts=[ModelForecast("m", "t", 2, 10, 1000, 1.0)],
+    )
+    render_forecast_report(report, console=cap)
+    out = _text(cap)
+    assert "Cost Forecast" in out
+    assert "1,000" in out
+
+
+def test_render_drift_alert(cap):
+    alert = DriftAlert("a", "b", 5.0, 50, 2.0, 10.0, AlertSeverity.WARN, None, "WARN: drift")
+    render_drift_alert(alert, console=cap)
+    out = _text(cap)
+    assert "WARN" in out
+    assert "Tokenizer Drift" in out
